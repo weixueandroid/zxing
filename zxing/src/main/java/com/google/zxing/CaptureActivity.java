@@ -25,11 +25,8 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -58,7 +55,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
   private CameraManager cameraManager;
   private CaptureActivityHandler handler;
-  private Result savedResultToShow;
   private ViewfinderView viewfinderView;
   private TextView statusView;
   private Result lastResult;
@@ -95,12 +91,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     beepManager = new BeepManager(this);
     ambientLightManager = new AmbientLightManager(this);
 
-    // TODO: 新加代码
-//    if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-//      setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-//    } else {
-//      setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-//    }
   }
 
   @Override
@@ -121,10 +111,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     handler = null;
     lastResult = null;
 
-    // TODO: 与上面新加代码只能存其一
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
     if (prefs.getBoolean("preferences_orientation", true)) {
-//    if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
       setRequestedOrientation(getCurrentOrientation());
     } else {
       setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
@@ -146,7 +134,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     if (intent != null) {
 
       String action = intent.getAction();
-      String dataString = intent.getDataString();
 
       if (Intents.Scan.ACTION.equals(action)) {
 
@@ -226,7 +213,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     ambientLightManager.stop();
     beepManager.close();
     cameraManager.closeDriver();
-    //historyManager = null; // Keep for onActivityResult
     if (!hasSurface) {
       SurfaceView surfaceView = (SurfaceView) findViewById(R.id.preview_view);
       SurfaceHolder surfaceHolder = surfaceView.getHolder();
@@ -262,22 +248,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     }
     return super.onKeyDown(keyCode, event);
   }
-
-//  private void decodeOrStoreSavedBitmap(Bitmap bitmap, Result result) {
-//    // Bitmap isn't used yet -- will be used soon
-//    if (handler == null) {
-//      savedResultToShow = result;
-//    } else {
-//      if (result != null) {
-//        savedResultToShow = result;
-//      }
-//      if (savedResultToShow != null) {
-//        Message message = Message.obtain(handler, R.id.decode_succeeded, savedResultToShow);
-//        handler.sendMessage(message);
-//      }
-//      savedResultToShow = null;
-//    }
-//  }
 
   @Override
   public void surfaceCreated(SurfaceHolder holder) {
@@ -315,7 +285,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     if (fromLiveScan) {
       // Then not from history, so beep/vibrate and we have an image to draw on
       beepManager.playBeepSoundAndVibrate();
-//      drawResultPoints(barcode, scaleFactor, rawResult);
     }
     Log.e("======","=====handleDecode====" + lastResult.getText());
     Intent intent = new Intent();
@@ -325,49 +294,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     this.setResult(RESULT_OK,intent);
     finish();
   }
-
-//  /**
-//   * Superimpose a line for 1D or dots for 2D to highlight the key features of the barcode.
-//   *
-//   * @param barcode   A bitmap of the captured image.
-//   * @param scaleFactor amount by which thumbnail was scaled
-//   * @param rawResult The decoded results which contains the points to draw.
-//   */
-//  private void drawResultPoints(Bitmap barcode, float scaleFactor, Result rawResult) {
-//    ResultPoint[] points = rawResult.getResultPoints();
-//    if (points != null && points.length > 0) {
-//      Canvas canvas = new Canvas(barcode);
-//      Paint paint = new Paint();
-//      paint.setColor(getResources().getColor(R.color.result_points));
-//      if (points.length == 2) {
-//        paint.setStrokeWidth(4.0f);
-//        drawLine(canvas, paint, points[0], points[1], scaleFactor);
-//      } else if (points.length == 4 &&
-//                 (rawResult.getBarcodeFormat() == BarcodeFormat.UPC_A ||
-//                  rawResult.getBarcodeFormat() == BarcodeFormat.EAN_13)) {
-//        // Hacky special case -- draw two lines, for the barcode and metadata
-//        drawLine(canvas, paint, points[0], points[1], scaleFactor);
-//        drawLine(canvas, paint, points[2], points[3], scaleFactor);
-//      } else {
-//        paint.setStrokeWidth(10.0f);
-//        for (ResultPoint point : points) {
-//          if (point != null) {
-//            canvas.drawPoint(scaleFactor * point.getX(), scaleFactor * point.getY(), paint);
-//          }
-//        }
-//      }
-//    }
-//  }
-//
-//  private static void drawLine(Canvas canvas, Paint paint, ResultPoint a, ResultPoint b, float scaleFactor) {
-//    if (a != null && b != null) {
-//      canvas.drawLine(scaleFactor * a.getX(),
-//                      scaleFactor * a.getY(),
-//                      scaleFactor * b.getX(),
-//                      scaleFactor * b.getY(),
-//                      paint);
-//    }
-//  }
 
   private void initCamera(SurfaceHolder surfaceHolder) {
     if (surfaceHolder == null) {
@@ -383,7 +309,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
       if (handler == null) {
         handler = new CaptureActivityHandler(this, decodeFormats, decodeHints, characterSet, cameraManager);
       }
-//      decodeOrStoreSavedBitmap(null, null);
     } catch (IOException ioe) {
       Log.w(TAG, ioe);
       displayFrameworkBugMessageAndExit();
@@ -403,13 +328,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     builder.setOnCancelListener(new FinishListener(this));
     builder.show();
   }
-
-//  public void restartPreviewAfterDelay(long delayMS) {
-//    if (handler != null) {
-//      handler.sendEmptyMessageDelayed(R.id.restart_preview, delayMS);
-//    }
-//    resetStatusView();
-//  }
 
   private void resetStatusView() {
     statusView.setText(R.string.msg_default_status);
