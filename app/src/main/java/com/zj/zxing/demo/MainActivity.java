@@ -1,4 +1,4 @@
-package com.paymew.zj.demo;
+package com.zj.zxing.demo;
 
 import android.content.Intent;
 import android.os.Bundle;
